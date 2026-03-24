@@ -21,3 +21,17 @@ Bisa. Project ini **100% static** (tanpa server backend), jadi cocok untuk GitHu
 
 ## Catatan
 - Semua path aset menggunakan path relatif, jadi tetap aman saat di-host dari subpath GitHub Pages (`https://<user>.github.io/<repo>/`).
+
+## Auto Deploy (GitHub Actions)
+Workflow auto deploy sudah disiapkan di `.github/workflows/deploy-pages.yml`.
+
+Trigger:
+- push ke branch `main`
+- manual dari tab **Actions** (`workflow_dispatch`)
+
+Agar aktif:
+1. Pastikan repo punya branch `main`.
+2. Buka **Settings → Pages**.
+3. Pada **Source**, pilih **GitHub Actions**.
+
+Setelah itu setiap push ke `main` akan otomatis deploy ke GitHub Pages.
