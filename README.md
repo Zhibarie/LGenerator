@@ -29,6 +29,9 @@ Trigger:
 - push ke branch `main`
 - manual dari tab **Actions** (`workflow_dispatch`)
 
+Catatan CI:
+- Workflow diset `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` agar kompatibel dengan migrasi deprecasi Node.js 20 di GitHub Actions.
+
 Agar aktif:
 1. Pastikan repo punya branch `main`.
 2. Buka **Settings → Pages**.
