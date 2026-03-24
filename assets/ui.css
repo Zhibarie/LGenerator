@@ -1,0 +1,370 @@
+:root {
+            --base-font-size: 12pt;
+            --cv-font-size: 11px;
+            --red: #c0392b;
+            --a4-w: 794px;
+            --a4-h: 1123px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #525659; overflow-x: hidden; font-family: 'Times New Roman', Times, serif; }
+
+        /* ── TOOLBAR ──────────────────────────────────────────── */
+        .toolbar {
+            background: #202124; color: white;
+            padding: 6px 10px; position: fixed; top: 0; width: 100%;
+            z-index: 1000;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5); gap: 8px;
+        }
+        .toolbar-left  { display:flex; align-items:center; gap:8px; flex:1; min-width:0; overflow:hidden; }
+        .toolbar-right { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+        .editor-container {
+            margin-top: 52px; padding: 12px;
+            display: flex; justify-content: center;
+        }
+
+        /* ── KERTAS A4 ────────────────────────────────────────── */
+        .paper-a4 {
+            width: var(--a4-w); height: var(--a4-h);
+            background: white; position: relative;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+            overflow: hidden; border: 2px solid #ccc;
+            transition: border-color .3s;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: var(--base-font-size);
+            color: #111;
+        }
+        .paper-a4.overflow { border-color: #dc3545; }
+        /* bar sisi kiri penanda isi */
+        .paper-a4::after {
+            content: ''; position: absolute; bottom: 0; left: 0;
+            width: 4px; height: var(--fill-pct, 0%);
+            background: linear-gradient(to top, #22c55e, #86efac);
+            transition: height .4s;
+        }
+        .paper-a4.overflow::after { background: #ef4444; }
+
+        /* ── ISI KERTAS ───────────────────────────────────────── */
+        .paper-content {
+            padding: 22mm 10mm 20mm 12mm;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        /* Tanggal kanan atas */
+        .date-line {
+            text-align: right;
+            margin-bottom: 20px;
+            font-size: var(--base-font-size);
+        }
+
+        /* Kepada Yth */
+        .recipient-block {
+            margin-bottom: 18px;
+            line-height: 1.7;
+        }
+
+        /* Paragraf isi */
+        .letter-para {
+            text-align: justify;
+            margin-bottom: 12px;
+            line-height: 1.65;
+            font-size: var(--base-font-size);
+        }
+
+        /* Tabel data diri */
+        .data-table {
+            width: 100%; border-collapse: collapse;
+            margin: 8px 0 14px;
+        }
+        .data-table td {
+            padding: 2px 0;
+            vertical-align: top;
+            font-size: var(--base-font-size);
+            line-height: 1.65;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        .data-table td:first-child  { width: 155px; }
+        .data-table td:nth-child(2) { width: 14px; padding-right: 6px; }
+
+        /* Daftar lampiran — 2 kolom, urut ke bawah dulu baru ke kanan */
+        .lamp-grid {
+            column-count: 2;
+            column-gap: 24px;
+            margin: 8px 0 14px 18px;
+            list-style: none; padding: 0;
+        }
+        .lamp-grid li {
+            display: flex; align-items: baseline; gap: 5px;
+            font-size: var(--base-font-size); line-height: 1.65;
+            break-inside: avoid; /* jangan potong item di tengah kolom */
+            -webkit-column-break-inside: avoid;
+        }
+        .lamp-num { font-weight: normal; flex-shrink: 0; min-width: 18px; }
+
+        /* Tanda tangan */
+        .ttd-block {
+            display: flex; justify-content: flex-end;
+            margin-top: 14px; padding-bottom: 10px;
+        }
+        .ttd-inner { text-align: center; width: 210px; line-height: 1.6; }
+        .signature-zone {
+            width: 200px; height: 65px;
+            border: 1px dashed var(--red); border-radius: 5px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; overflow: hidden; background: #fff8f8;
+            transition: background .2s; position: relative; margin: 6px auto;
+        }
+        .signature-zone:hover { background: #fff0f0; }
+        .signature-zone img { width: 100%; height: 100%; object-fit: contain; display: none; }
+        .sig-placeholder { font-size: 10px; color: var(--red); text-align: center; pointer-events: none; line-height: 1.4; }
+        .signature-zone.has-sig .sig-placeholder { display: none; }
+        .signature-zone.has-sig img { display: block; }
+        .signature-zone.has-sig { background: transparent; border-style: dotted; }
+        .sig-clear { position: absolute; top: 3px; right: 5px; font-size: 10px; color: var(--red); cursor: pointer; opacity: .5; display: none; }
+        .sig-clear:hover { opacity: 1; }
+        .signature-zone.has-sig .sig-clear { display: block; }
+
+        /* ── EDITABLE ─────────────────────────────────────────── */
+        /* Teks normal = hitam, border abu tipis */
+        .editable {
+            color: inherit;
+            border-bottom: 1px dashed #bbb;
+            cursor: text; display: inline; min-width: 8px;
+            transition: border-color .2s, background .2s;
+        }
+        /* Hover: border merah sebagai petunjuk bisa diedit */
+        .editable:hover { border-bottom-color: var(--red); }
+        /* Saat aktif diedit: highlight merah */
+        .editable:focus {
+            outline: none;
+            color: var(--red);
+            border-bottom: 1px dashed var(--red);
+            background: #fff5f5; border-radius: 2px;
+        }
+        .btn-remove {
+            color: var(--red); margin-left: 4px; cursor: pointer;
+            font-size: 11px; opacity: .4; transition: opacity .2s; flex-shrink: 0;
+        }
+        .btn-remove:hover { opacity: 1; }
+        /* Upload lampiran */
+        .btn-lamp-upload {
+            margin-left: 4px; cursor: pointer; font-size: 11px;
+            opacity: .45; transition: opacity .2s, color .2s; flex-shrink: 0;
+            color: #3b82f6;
+        }
+        .btn-lamp-upload:hover { opacity: 1; }
+        .btn-lamp-upload.has-file { color: #22c55e; opacity: .85; }
+        /* Modal dokumen lampiran */
+        #lampModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:7000; align-items:center; justify-content:center; padding:16px; }
+        #lampModal.active { display:flex; }
+        .lamp-modal-box { background:#1e1e1e; border-radius:14px; padding:22px; width:420px; max-width:98vw; box-shadow:0 20px 60px rgba(0,0,0,0.7); color:white; }
+        .lamp-modal-box h5 { margin:0 0 4px; font-size:.95rem; font-weight:700; font-family:sans-serif; }
+        .lamp-modal-box .sub { margin:0 0 14px; font-size:11px; color:#888; font-family:sans-serif; }
+        .lamp-drop-zone { border:2px dashed #444; border-radius:10px; padding:28px 16px; text-align:center; cursor:pointer; transition:all .2s; color:#777; font-family:sans-serif; font-size:13px; }
+        .lamp-drop-zone:hover, .lamp-drop-zone.drag { border-color:#3b82f6; background:rgba(59,130,246,.07); color:#ccc; }
+        .lamp-drop-zone i { font-size:2rem; display:block; margin-bottom:8px; opacity:.4; }
+        .lamp-preview { margin-top:12px; background:rgba(255,255,255,.05); border-radius:8px; padding:10px 14px; display:flex; align-items:center; gap:10px; font-family:sans-serif; }
+        .lamp-preview-name { flex:1; font-size:12px; color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .lamp-preview-size { font-size:10px; color:#666; flex-shrink:0; }
+        .lamp-preview-pages { font-size:10px; color:#22c55e; flex-shrink:0; }
+        .lamp-modal-actions { display:flex; gap:8px; margin-top:14px; }
+        .lamp-modal-actions button { flex:1; padding:8px; border-radius:8px; font-size:12px; font-weight:600; font-family:sans-serif; cursor:pointer; border:none; transition:background .2s; }
+        .lamp-btn-apply { background:#3b82f6; color:white; }
+        .lamp-btn-apply:hover { background:#2563eb; }
+        .lamp-btn-remove { background:#333; color:#c0392b; }
+        .lamp-btn-remove:hover { background:#444; }
+        .lamp-btn-cancel { background:#2a2a2a; color:#888; }
+        .lamp-btn-cancel:hover { background:#333; color:#ccc; }
+        /* Progress bar di loading */
+        #pdf-progress { font-size:12px; color:#aaa; margin-top:6px; font-family:sans-serif; }
+        .btn-add-lamp {
+            font-size: 11px; color: #27ae60; cursor: pointer;
+            font-weight: 600; display: inline-block; margin-bottom: 4px;
+            font-family: sans-serif;
+        }
+        .btn-add-lamp:hover { text-decoration: underline; }
+
+        /* ── AUTO-FIT BAR ─────────────────────────────────────── */
+        #fit-status {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px; padding: 4px 12px; font-size: 12px;
+        }
+        #fit-bar-wrap { width: 75px; height: 6px; background: rgba(255,255,255,0.15); border-radius: 99px; overflow: hidden; }
+        #fit-bar { height: 100%; border-radius: 99px; background: #22c55e; transition: width .4s, background .3s; width: 0%; }
+        #fit-label { min-width: 38px; color: #ccc; font-variant-numeric: tabular-nums; }
+        #font-size-display { color: #facc15; font-weight: bold; font-size: 11px; }
+
+        /* ── LOADING ──────────────────────────────────────────── */
+        #pdf-loading {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.65); z-index: 9999;
+            flex-direction: column; align-items: center; justify-content: center;
+            color: white; font-size: 1.1rem; font-weight: bold; gap: 14px;
+        }
+        #pdf-loading.active { display: flex; }
+        .spinner { width: 46px; height: 46px; border: 4px solid rgba(255,255,255,0.25); border-top-color: white; border-radius: 50%; animation: spin .75s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── MODAL TTD ────────────────────────────────────────── */
+        #sigModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 5000; align-items: center; justify-content: center; }
+        #sigModal.active { display: flex; }
+        .sig-modal-box { background: #1e1e1e; border-radius: 14px; padding: 22px; width: 510px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,0.6); color: white; }
+        .sig-modal-box h5 { margin: 0 0 4px; font-size: .98rem; font-weight: 700; }
+        .sig-modal-box .sub { margin: 0 0 12px; font-size: 11px; color: #999; }
+        .sig-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+        .sig-tab { padding: 5px 13px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: #333; color: #aaa; border: 1px solid #444; transition: all .2s; }
+        .sig-tab.active { background: #c0392b; color: white; border-color: #c0392b; }
+        #sigCanvas { width: 100%; height: 185px; background: white; border-radius: 8px; cursor: crosshair; touch-action: none; display: block; }
+        .sig-controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .sig-controls label { font-size: 11px; color: #888; margin: 0; }
+        .color-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color .2s, transform .15s; }
+        .color-dot.active, .color-dot:hover { border-color: white; transform: scale(1.2); }
+        .sig-upload-area { height: 185px; border: 2px dashed #444; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: border-color .2s, background .2s; color: #777; font-size: 13px; gap: 8px; }
+        .sig-upload-area:hover { border-color: #c0392b; background: #1a0005; color: #ccc; }
+
+        /* ── MISC ─────────────────────────────────────────────── */
+        #save-indicator { font-size: 11px; color: #6ee7a0; opacity: 0; transition: opacity .5s; }
+        #save-indicator.show { opacity: 1; }
+
+        .ic-edu-row, .ic-exp-row { background:rgba(255,255,255,0.04); border:1px solid #333; border-radius:8px; padding:10px 12px; position:relative; }
+        .ic-edu-row .ic-row-remove, .ic-exp-row .ic-row-remove { position:absolute;top:8px;right:10px;color:#c0392b;cursor:pointer;font-size:11px;opacity:.5; }
+        .ic-edu-row .ic-row-remove:hover, .ic-exp-row .ic-row-remove:hover { opacity:1; }
+        .ic-row-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px; }
+        .ic-row-grid .full { grid-column:1/-1; }
+
+        .ic-lamp-item { display:flex; align-items:center; gap:7px; font-size:12px; font-family:sans-serif; color:#ccc; cursor:pointer; padding:4px 6px; border-radius:6px; transition:background .15s; }
+        .ic-lamp-item:hover { background:rgba(255,255,255,0.06); }
+        .ic-lamp-item input[type=checkbox] { accent-color:#c0392b; width:14px; height:14px; flex-shrink:0; cursor:pointer; }
+        .ic-lamp-item.custom-item { color:#86efac; }
+        .ic-lamp-remove { margin-left:auto; color:#c0392b; cursor:pointer; font-size:11px; opacity:.5; }
+        .ic-lamp-remove:hover { opacity:1; }
+
+        /* ── MODAL ISI CEPAT ──────────────────────────────────── */
+        #isiCepatModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:6000; align-items:center; justify-content:center; padding:16px; }
+        #isiCepatModal.active { display:flex; }
+        .ic-box {
+            background:#1e1e1e; border-radius:16px; padding:24px 28px;
+            width:560px; max-width:98vw; max-height:92vh; overflow-y:auto;
+            box-shadow:0 24px 70px rgba(0,0,0,0.7); color:white;
+        }
+        .ic-box h5 { margin:0 0 4px; font-size:1rem; font-weight:700; font-family:sans-serif; }
+        .ic-box .sub { margin:0 0 18px; font-size:11px; color:#888; font-family:sans-serif; }
+        .ic-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
+        .ic-grid .full { grid-column:1/-1; }
+        .ic-label { font-size:11px; color:#aaa; margin-bottom:4px; font-family:sans-serif; display:block; }
+        .ic-input {
+            width:100%; background:#2a2a2a; border:1px solid #444; border-radius:8px;
+            color:white; padding:7px 10px; font-size:13px; font-family:sans-serif;
+            transition:border-color .2s; outline:none;
+        }
+        .ic-input:focus { border-color:#c0392b; }
+        .ic-input option { background:#2a2a2a; }
+        .ic-date-group { display:flex; gap:8px; }
+        .ic-date-btn {
+            flex:1; padding:7px 6px; border-radius:8px; font-size:12px; font-family:sans-serif;
+            font-weight:600; cursor:pointer; border:1px solid #444; background:#2a2a2a;
+            color:#aaa; transition:all .2s; text-align:center;
+        }
+        .ic-date-btn.active { background:#c0392b; border-color:#c0392b; color:white; }
+        .ic-divider { grid-column:1/-1; border:none; border-top:1px solid #333; margin:4px 0; }
+        .ic-apply-btn {
+            width:100%; margin-top:18px; padding:10px; border-radius:10px;
+            background:#c0392b; color:white; font-weight:700; font-size:14px;
+            border:none; cursor:pointer; font-family:sans-serif; transition:background .2s;
+        }
+        .ic-apply-btn:hover { background:#a93226; }
+        .ic-cancel-btn {
+            width:100%; margin-top:8px; padding:8px; border-radius:10px;
+            background:transparent; color:#888; font-size:13px;
+            border:1px solid #333; cursor:pointer; font-family:sans-serif; transition:all .2s;
+        }
+        .ic-cancel-btn:hover { border-color:#888; color:#ccc; }
+        .ic-section-title { grid-column:1/-1; font-size:10px; font-weight:700; color:#c0392b; text-transform:uppercase; letter-spacing:1px; font-family:sans-serif; margin-top:4px; }
+
+        /* ── CV STYLES ────────────────────────────────────────── */
+        .cv-editable { border-bottom:1px dashed rgba(255,255,255,0.2); cursor:text; display:inline; min-width:8px; transition:background .2s; }
+        .cv-editable:hover { border-bottom-color:rgba(255,255,255,0.6); }
+        .cv-editable:focus { outline:none; background:rgba(255,255,255,0.1); border-radius:2px; border-bottom-color:white; }
+        #cv-right .cv-editable { border-bottom-color:#ddd; }
+        #cv-right .cv-editable:hover { border-bottom-color:#c0392b; }
+        #cv-right .cv-editable:focus { background:#fff5f5; border-bottom-color:#c0392b; }
+        .cv-left-title { font-size:calc(var(--cv-font-size) * 0.82);font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.5);font-family:sans-serif;margin:0 0 8px;text-transform:uppercase; }
+        .cv-section-left { margin-bottom:18px; }
+        .cv-contact-item { display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;font-size:var(--cv-font-size);font-family:sans-serif;line-height:1.4; }
+        .cv-contact-item i { color:rgba(255,255,255,0.5);margin-top:1px;width:12px;flex-shrink:0;font-size:10px; }
+        .cv-info-row { display:flex;flex-direction:column;margin-bottom:7px;font-size:var(--cv-font-size);font-family:sans-serif; }
+        .cv-right-title { font-size:var(--cv-font-size);font-weight:700;font-family:sans-serif;color:#1a2a3a;letter-spacing:1px;text-transform:uppercase;border-bottom:2px solid #1a2a3a;padding-bottom:5px;margin-bottom:12px; }
+        .cv-section-right { margin-bottom:20px; }
+        .cv-edu-item, .cv-exp-item { margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;position:relative; }
+        .cv-edu-item:last-child, .cv-exp-item:last-child { border-bottom:none; }
+        .cv-item-title { font-size:calc(var(--cv-font-size) * 1.09);font-weight:700;font-family:sans-serif;color:#1a2a3a; }
+        .cv-item-sub { font-size:var(--cv-font-size);color:#666;font-family:sans-serif;margin:2px 0; }
+        .cv-item-desc { font-size:var(--cv-font-size);color:#444;font-family:'Times New Roman',serif;line-height:1.6;margin-top:4px; }
+        .cv-add-btn { font-size:11px;color:#27ae60;cursor:pointer;font-weight:600;font-family:sans-serif;display:inline-block;margin-top:2px; }
+        .cv-add-btn:hover { text-decoration:underline; }
+        .cv-remove-btn { position:absolute;top:0;right:0;font-size:10px;color:#c0392b;cursor:pointer;opacity:.4;font-family:sans-serif; }
+        .cv-remove-btn:hover { opacity:1; }
+        .cv-export-btn { background:#1a2a3a;color:white;border:none;border-radius:8px;padding:6px 16px;font-weight:700;font-size:12px;cursor:pointer;font-family:sans-serif;display:none;transition:background .2s; }
+        .cv-export-btn:hover { background:#0f1e2e; }
+
+        /* ── MOBILE RESPONSIVE ────────────────────────────────── */
+        /* Skala kertas A4 agar muat di layar HP */
+        .paper-wrapper {
+            transform-origin: top center;
+            display: inline-block;
+        }
+
+        /* Toolbar label sembunyikan di HP kecil */
+        @media (max-width: 600px) {
+            .toolbar { padding: 7px 10px; gap: 5px; }
+            .toolbar-title-label { display: none; }
+            #fit-status { padding: 3px 8px; }
+            .toolbar-hint { display: none; }
+
+            /* Tombol toolbar lebih ringkas */
+            .toolbar-right .btn { padding: 4px 8px; font-size: 11px; }
+            .tab-btn-label { display: none; }
+
+            /* Modal full width */
+            .ic-box, .lamp-modal-box, .sig-modal-box { 
+                width: 100% !important; max-width: 100% !important; 
+                border-radius: 14px 14px 0 0;
+                margin-top: auto;
+            }
+            #isiCepatModal, #lampModal, #sigModal {
+                align-items: flex-end !important;
+                padding: 0 !important;
+            }
+            .ic-box { max-height: 88vh; }
+
+            /* Isi Cepat grid 1 kolom di HP */
+            .ic-grid { grid-template-columns: 1fr !important; }
+            .ic-grid .full { grid-column: 1 !important; }
+            .ic-row-grid { grid-template-columns: 1fr !important; }
+            .ic-row-grid .full { grid-column: 1 !important; }
+
+            /* Daftar lampiran 1 kolom */
+            #ic_lamp_list { grid-template-columns: 1fr !important; }
+
+            /* CV kolom kiri lebih sempit */
+            #cv-left { width: 170px !important; min-width: 170px !important; padding: 18px 12px !important; }
+            #cv-right { padding: 18px 14px !important; }
+        }
+
+        @media (max-width: 400px) {
+            #cv-left { width: 140px !important; min-width: 140px !important; padding: 14px 10px !important; }
+        }
+
+        /* ── PRINT ────────────────────────────────────────────── */
+        @media print {
+            .toolbar, .btn-remove, .btn-add-lamp, #pdf-loading, #sigModal, .sig-placeholder, .sig-clear { display: none !important; }
+            body { background: white; }
+            .editor-container { margin: 0; padding: 0; min-width: unset; }
+            .paper-a4 { box-shadow: none; border: none; width: 100%; height: auto; overflow: visible; }
+            .paper-a4::after { display: none; }
+            .editable { color: black !important; border-bottom: none !important; }
+            .signature-zone { border: none !important; background: transparent !important; }
+        }
