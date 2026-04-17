@@ -29,41 +29,81 @@ const DEFAULTS = {
     ttd_nama: 'Dani Hamdani',
 };
 
-const frame   = document.getElementById('paperFrame');
-const content = document.getElementById('letterContent');
-let autoFitTimer = null, saveTimer = null;
+// Cache DOM elements for performance
+const DOM = {
+    frame: null,
+    content: null,
+    fitBar: null,
+    fitLabel: null,
+    fontSizeDisplay: null,
+    saveIndicator: null,
+    sigPreview: null,
+    signatureZone: null,
+    attachmentGrid: null,
+    pdfLoading: null,
+    pdfProgress: null,
+    penSizeInput: null,
+    penSizeVal: null,
+    cvFitBar: null,
+    cvFitLabel: null,
+    cvFontSizeDisplay: null,
+    cvFrame: null,
+    init() {
+        this.frame = document.getElementById('paperFrame');
+        this.content = document.getElementById('letterContent');
+        this.fitBar = document.getElementById('fit-bar');
+        this.fitLabel = document.getElementById('fit-label');
+        this.fontSizeDisplay = document.getElementById('font-size-display');
+        this.saveIndicator = document.getElementById('save-indicator');
+        this.sigPreview = document.getElementById('sigPreview');
+        this.signatureZone = document.getElementById('signatureZone');
+        this.attachmentGrid = document.getElementById('attachmentGrid');
+        this.pdfLoading = document.getElementById('pdf-loading');
+        this.pdfProgress = document.getElementById('pdf-progress');
+        this.penSizeInput = document.getElementById('penSize');
+        this.penSizeVal = document.getElementById('penSizeVal');
+        this.cvFitBar = document.getElementById('cv-fit-bar');
+        this.cvFitLabel = document.getElementById('cv-fit-label');
+        this.cvFontSizeDisplay = document.getElementById('cv-font-size-display');
+        this.cvFrame = document.getElementById('cvFrame');
+    }
+};
+
+let autoFitTimer = null, saveTimer = null, rafPending = false;
 
 // ─── AUTO-FIT ────────────────────────────────────────────────────────────────
 function ptToPx(pt) { return (pt * 96) / 72; }
 function setFont(pt) { document.documentElement.style.setProperty('--base-font-size', ptToPx(pt) + 'px'); }
 
 function autoFit() {
-    const tH = frame.clientHeight;
+    const tH = DOM.frame.clientHeight;
     setFont(MIN_FONT);
-    if (content.scrollHeight > tH) { updateFitUI(MIN_FONT, tH); return; }
+    if (DOM.content.scrollHeight > tH) { updateFitUI(MIN_FONT, tH); return; }
     setFont(MAX_FONT);
-    if (content.scrollHeight <= tH) { updateFitUI(MAX_FONT, tH); return; }
+    if (DOM.content.scrollHeight <= tH) { updateFitUI(MAX_FONT, tH); return; }
     let lo = MIN_FONT, hi = MAX_FONT;
     while (hi - lo > STEP) {
         const mid = (lo + hi) / 2;
         setFont(mid);
-        content.scrollHeight <= tH ? (lo = mid) : (hi = mid);
+        DOM.content.scrollHeight <= tH ? (lo = mid) : (hi = mid);
     }
     setFont(Math.round(lo * 5) / 5);
     updateFitUI(Math.round(lo * 5) / 5, tH);
 }
 function updateFitUI(pt, tH) {
-    const pct  = Math.min(100, Math.round((content.scrollHeight / tH) * 100));
-    const over = content.scrollHeight > tH;
-    const bar  = document.getElementById('fit-bar');
-    bar.style.width      = pct + '%';
-    bar.style.background = over ? '#ef4444' : pt >= MAX_FONT ? '#facc15' : '#22c55e';
-    document.getElementById('fit-label').textContent        = pct + '%';
-    document.getElementById('font-size-display').textContent = pt.toFixed(1).replace(/\.0$/,'') + 'pt';
-    frame.classList.toggle('overflow', over);
-    frame.style.setProperty('--fill-pct', pct + '%');
-    // Re-scale setelah font berubah
-    requestAnimationFrame(scalePaper);
+    const pct  = Math.min(100, Math.round((DOM.content.scrollHeight / tH) * 100));
+    const over = DOM.content.scrollHeight > tH;
+    DOM.fitBar.style.width      = pct + '%';
+    DOM.fitBar.style.background = over ? '#ef4444' : pt >= MAX_FONT ? '#facc15' : '#22c55e';
+    DOM.fitLabel.textContent        = pct + '%';
+    DOM.fontSizeDisplay.textContent = pt.toFixed(1).replace(/\.0$/,'') + 'pt';
+    DOM.frame.classList.toggle('overflow', over);
+    DOM.frame.style.setProperty('--fill-pct', pct + '%');
+    // Re-scale setelah font berubah - batch with rAF
+    if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(() => { scalePaper(); rafPending = false; });
+    }
 }
 function scheduleAutoFit() { clearTimeout(autoFitTimer); autoFitTimer = setTimeout(autoFit, 280); }
 
@@ -83,11 +123,10 @@ function triggerAutoSave() {
         const items = [...document.querySelectorAll('#attachmentGrid .lamp-editable')]
             .map(el => el.innerText);
         localStorage.setItem('ls_attachments', JSON.stringify(items));
-        const sig = document.getElementById('sigPreview').src;
+        const sig = DOM.sigPreview.src;
         if (sig && sig !== location.href) localStorage.setItem('ls_sig', sig);
-        const ind = document.getElementById('save-indicator');
-        ind.classList.add('show');
-        setTimeout(() => ind.classList.remove('show'), 2000);
+        DOM.saveIndicator.classList.add('show');
+        setTimeout(() => DOM.saveIndicator.classList.remove('show'), 2000);
     }, 700);
 }
 
@@ -108,18 +147,17 @@ let lampDocs  = {};   // { lid: { name, type, dataUrl, pages } }
 let lampIdSeq = 0;
 
 function renderAttachments(list) {
-    document.getElementById('attachmentGrid').innerHTML = '';
+    DOM.attachmentGrid.innerHTML = '';
     lampDocs = {};
     list.forEach(t => addAttachment(t));
 }
 function addAttachment(text = 'Dokumen baru.') {
-    const grid = document.getElementById('attachmentGrid');
     const li   = document.createElement('li');
     const lid  = 'lamp_' + (++lampIdSeq);
     li.dataset.lid = lid;
     li.innerHTML = `<span class="lamp-num"></span><span class="lamp-editable editable" contenteditable="true">${esc(text)}</span><i class="fas fa-cloud-upload-alt btn-lamp-upload" onclick="openLampModal('${lid}',this)" title="Upload dokumen"></i><i class="fas fa-times-circle btn-remove" onclick="removeAttachment(this)" title="Hapus"></i>`;
     li.querySelector('.lamp-editable').addEventListener('input', () => { scheduleAutoFit(); triggerAutoSave(); });
-    grid.appendChild(li);
+    DOM.attachmentGrid.appendChild(li);
     renumberAttachments();
     scheduleAutoFit();
 }
@@ -159,10 +197,9 @@ async function exportPDF() {
     const editables  = document.querySelectorAll('.editable');
     const btnRemoves = document.querySelectorAll('.btn-remove');
     const btnAdd     = document.querySelector('.btn-add-lamp');
-    const loader     = document.getElementById('pdf-loading');
-    const sigZone    = document.getElementById('signatureZone');
+    const sigZone    = DOM.signatureZone;
 
-    loader.classList.add('active');
+    DOM.pdfLoading.classList.add('active');
     document.getElementById('btnExport').disabled = true;
     // Sembunyikan semua elemen UI yang tidak perlu di PDF
     btnRemoves.forEach(b => b.style.display = 'none');
@@ -176,9 +213,9 @@ async function exportPDF() {
     const hasSig = sigZone.classList.contains('has-sig');
     if (!hasSig && sigPlaceholder) sigPlaceholder.style.display = 'none';
     if (sigClear) sigClear.style.display = 'none';
-    frame.style.border = 'none';
+    DOM.frame.style.border = 'none';
     // Sembunyikan bar indikator kiri
-    frame.style.setProperty('--fill-pct', '0%');
+    DOM.frame.style.setProperty('--fill-pct', '0%');
     const origAfter = document.createElement('style');
     origAfter.id = 'pdf-hide-after';
     origAfter.textContent = '#paperFrame::after { display: none !important; }';
@@ -187,7 +224,7 @@ async function exportPDF() {
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     try {
         setProgress('Merender surat...');
-        const { dataUrl } = await elementToJpeg(frame, { windowWidth: 794 });
+        const { dataUrl } = await elementToJpeg(DOM.frame, { windowWidth: 794 });
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
         pdf.addImage(dataUrl, 'JPEG', 0, 0, 210, 297);
@@ -202,11 +239,11 @@ async function exportPDF() {
         sigZone.style.border = ''; sigZone.style.background = '';
         if (!hasSig && sigPlaceholder) sigPlaceholder.style.display = '';
         if (sigClear) sigClear.style.display = '';
-        frame.style.border = '';
+        DOM.frame.style.border = '';
         const hideStyle = document.getElementById('pdf-hide-after');
         if (hideStyle) hideStyle.remove();
         setProgress('');
-        loader.classList.remove('active');
+        DOM.pdfLoading.classList.remove('active');
         document.getElementById('btnExport').disabled = false;
         setTimeout(() => { autoFit(); scalePaper(); }, 50);
     }
@@ -272,11 +309,11 @@ function applySig() {
     }
     applySigData(data); triggerAutoSave(); closeSigModal();
 }
-function applySigData(data) { document.getElementById('sigPreview').src=data; document.getElementById('signatureZone').classList.add('has-sig'); }
+function applySigData(data) { DOM.sigPreview.src=data; DOM.signatureZone.classList.add('has-sig'); }
 function clearSig(e) {
     if(e) e.stopPropagation();
-    document.getElementById('sigPreview').src='';
-    document.getElementById('signatureZone').classList.remove('has-sig');
+    DOM.sigPreview.src='';
+    DOM.signatureZone.classList.remove('has-sig');
     localStorage.removeItem('ls_sig');
 }
 
@@ -1249,7 +1286,7 @@ function setCvFont(px) {
     document.documentElement.style.setProperty('--cv-font-size', px + 'px');
 }
 function autoFitCV() {
-    const cvEl = document.getElementById('cvFrame');
+    const cvEl = DOM.cvFrame;
     if (!cvEl) return;
     const A4_H = 1123; // px
 
@@ -1272,22 +1309,22 @@ function autoFitCV() {
     setCvFont(best);
     updateCvFitUI(best, cvEl.scrollHeight, A4_H);
     addBtns.forEach(b => b.style.visibility = '');
-    requestAnimationFrame(scalePaper);
+    if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(() => { scalePaper(); rafPending = false; });
+    }
 }
 
 function updateCvFitUI(px, contentH, maxH) {
     const pt   = Math.round((px * 72 / 96) * 10) / 10;
     const pct  = Math.min(100, Math.round((contentH / maxH) * 100));
     const over = contentH > maxH;
-    const bar  = document.getElementById('cv-fit-bar');
-    if (bar) {
-        bar.style.width      = pct + '%';
-        bar.style.background = over ? '#ef4444' : px >= CV_MAX_FONT ? '#facc15' : '#22c55e';
+    if (DOM.cvFitBar) {
+        DOM.cvFitBar.style.width      = pct + '%';
+        DOM.cvFitBar.style.background = over ? '#ef4444' : px >= CV_MAX_FONT ? '#facc15' : '#22c55e';
     }
-    const lbl = document.getElementById('cv-fit-label');
-    if (lbl) lbl.textContent = pct + '%';
-    const fsd = document.getElementById('cv-font-size-display');
-    if (fsd) fsd.textContent = pt.toFixed(1).replace(/\.0$/, '') + 'pt';
+    if (DOM.cvFitLabel) DOM.cvFitLabel.textContent = pct + '%';
+    if (DOM.cvFontSizeDisplay) DOM.cvFontSizeDisplay.textContent = pt.toFixed(1).replace(/\.0$/, '') + 'pt';
 }
 
 function scheduleAutoFitCV() {
@@ -1352,10 +1389,11 @@ window.addEventListener('resize', scalePaper);
 
 // ─── EVENTS ──────────────────────────────────────────────────────────────────
 document.getElementById('penSize').addEventListener('input', function(){ penSize=parseFloat(this.value); document.getElementById('penSizeVal').textContent=penSize+'px'; });
-frame.addEventListener('input', () => { scheduleAutoFit(); triggerAutoSave(); });
+DOM.frame.addEventListener('input', () => { scheduleAutoFit(); triggerAutoSave(); });
 
 // ─── BACKEND ENTRYPOINT ─────────────────────────────────────────────────────
 window.__LGenInit = function __LGenInit() {
+    DOM.init();  // Initialize DOM cache
     updateDate();
     loadSavedData();
     autoFit();
