@@ -1,0 +1,240 @@
+/* ─── CV ────────────────────────────────────────────────────────────────────
+   CV layout: 2-column (left dark sidebar + right white content).
+   Photo, contacts, data diri, education, experience.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+#cv-container {
+  display: none;
+}
+#cv-container.active { display: flex; }
+
+#cvFrame {
+  width: var(--a4-w);
+  height: auto;
+  min-height: var(--a4-h);
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  border: 2px solid #ccc;
+  position: relative;
+}
+#cvFrame::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 4px;
+  height: var(--fill-pct, 0%);
+  background: linear-gradient(to top, var(--accent-green), #86efac);
+  transition: height 0.4s;
+}
+#cvFrame.overflow::after { background: var(--accent-red); }
+
+.cv-cols {
+  display: flex;
+  flex: 1;
+  min-height: var(--a4-h);
+}
+
+/* ── Left column ──────────────────────────────────────────────────────────── */
+#cv-left {
+  width: 220px;
+  min-width: 220px;
+  background: #1a2a3a;
+  color: white;
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cv-photo-zone {
+  width: 110px;
+  height: 130px;
+  margin: 0 auto 18px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px dashed rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.07);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+}
+.cv-photo-zone:hover { background: rgba(255,255,255,0.12); }
+.cv-photo-zone img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+  border-radius: 6px;
+}
+.cv-photo-zone .cv-photo-placeholder {
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  text-align: center;
+  line-height: 1.5;
+  pointer-events: none;
+}
+.cv-photo-zone .cv-photo-clear {
+  display: none;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  text-align: center;
+  line-height: 22px;
+  font-size: 12px;
+  color: white;
+  cursor: pointer;
+  border: none;
+  min-width: 22px;
+  min-height: 22px;
+  padding: 0;
+}
+
+.cv-name-pos {
+  text-align: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  padding-bottom: 16px;
+}
+
+.cv-section-left { margin-bottom: 18px; }
+.cv-left-title {
+  font-size: calc(var(--cv-font-size) * 0.82);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.5);
+  font-family: sans-serif;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+.cv-contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 7px;
+  font-size: var(--cv-font-size);
+  font-family: sans-serif;
+  line-height: 1.4;
+}
+.cv-contact-item i {
+  color: rgba(255,255,255,0.5);
+  margin-top: 1px;
+  width: 12px;
+  flex-shrink: 0;
+  font-size: 10px;
+}
+.cv-info-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 7px;
+  font-size: var(--cv-font-size);
+  font-family: sans-serif;
+}
+
+/* ── Right column ─────────────────────────────────────────────────────────── */
+#cv-right {
+  flex: 1;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  color: #1a1a1a;
+}
+.cv-section-right { margin-bottom: 20px; }
+.cv-right-title {
+  font-size: var(--cv-font-size);
+  font-weight: 700;
+  font-family: sans-serif;
+  color: #1a2a3a;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-bottom: 2px solid #1a2a3a;
+  padding-bottom: 5px;
+  margin-bottom: 12px;
+}
+.cv-editable {
+  border-bottom: 1px dashed rgba(255,255,255,0.2);
+  cursor: text;
+  display: inline;
+  min-width: 8px;
+  transition: background 0.2s;
+}
+.cv-editable:hover { border-bottom-color: rgba(255,255,255,0.6); }
+.cv-editable:focus {
+  outline: none;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  border-bottom-color: white;
+}
+#cv-right .cv-editable { border-bottom-color: #ddd; }
+#cv-right .cv-editable:hover { border-bottom-color: var(--accent); }
+#cv-right .cv-editable:focus {
+  background: #fff5f5;
+  border-bottom-color: var(--accent);
+}
+
+.cv-edu-item, .cv-exp-item {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+  position: relative;
+}
+.cv-edu-item:last-child, .cv-exp-item:last-child { border-bottom: none; }
+.cv-item-title {
+  font-size: calc(var(--cv-font-size) * 1.09);
+  font-weight: 700;
+  font-family: sans-serif;
+  color: #1a2a3a;
+}
+.cv-item-sub {
+  font-size: var(--cv-font-size);
+  color: #666;
+  font-family: sans-serif;
+  margin: 2px 0;
+}
+.cv-item-desc {
+  font-size: var(--cv-font-size);
+  color: #444;
+  font-family: 'Times New Roman', serif;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+.cv-add-btn {
+  font-size: 12px;
+  color: #27ae60;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: sans-serif;
+  display: inline-block;
+  margin-top: 4px;
+  background: none;
+  border: none;
+  min-height: 36px;
+  padding: 4px 8px;
+}
+.cv-add-btn:hover { text-decoration: underline; }
+.cv-remove-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 12px;
+  color: var(--accent);
+  cursor: pointer;
+  opacity: 0.4;
+  font-family: sans-serif;
+  background: none;
+  border: none;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+}
+.cv-remove-btn:hover { opacity: 1; }

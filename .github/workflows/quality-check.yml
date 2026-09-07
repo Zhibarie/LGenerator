@@ -1,0 +1,163 @@
+name: Quality Check
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify essential files exist
+        run: |
+          set -e
+          critical_files=(
+            "index.html"
+            "assets/js/app.js"
+            "assets/js/core/constants.js"
+            "assets/js/core/state.js"
+            "assets/js/core/storage.js"
+            "assets/js/core/utils.js"
+            "assets/js/core/events.js"
+            "assets/js/core/migration.js"
+            "assets/js/editor/letter-editor.js"
+            "assets/js/editor/auto-fit.js"
+            "assets/js/editor/content-sanitizer.js"
+            "assets/js/attachments/attachment-manager.js"
+            "assets/js/attachments/attachment-storage.js"
+            "assets/js/attachments/attachment-preview.js"
+            "assets/js/attachments/attachment-image.js"
+            "assets/js/attachments/attachment-pdf.js"
+            "assets/js/signature/signature.js"
+            "assets/js/signature/signature-canvas.js"
+            "assets/js/signature/signature-image.js"
+            "assets/js/cv/cv-editor.js"
+            "assets/js/cv/cv-storage.js"
+            "assets/js/cv/cv-photo.js"
+            "assets/js/cv/cv-auto-fit.js"
+            "assets/js/export/pdf-exporter.js"
+            "assets/js/export/pdf-renderer.js"
+            "assets/js/export/pdf-pagination.js"
+            "assets/js/export/pdf-images.js"
+            "assets/js/export/pdf-metadata.js"
+            "assets/js/ui/modal.js"
+            "assets/js/ui/notifications.js"
+            "assets/js/ui/loading.js"
+            "assets/js/ui/responsive.js"
+            "assets/js/quick-fill/quick-fill.js"
+            "assets/css/base.css"
+            "assets/css/layout.css"
+            "assets/css/components.css"
+            "assets/css/editor.css"
+            "assets/css/modal.css"
+            "assets/css/cv.css"
+            "assets/css/attachments.css"
+            "assets/css/print.css"
+            "assets/css/responsive.css"
+            "assets/css/mobile.css"
+          )
+          for f in "${critical_files[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "❌ Missing: $f"
+              exit 1
+            fi
+          done
+          echo "✓ All essential files present"
+
+      - name: JavaScript syntax check
+        run: |
+          set -e
+          # Check every JS file for syntax errors using Node's --check
+          for js in $(find assets/js -name '*.js'); do
+            node --check "$js" || {
+              echo "❌ Syntax error in $js"
+              exit 1
+            }
+          done
+          for js in $(find tests -name '*.js'); do
+            node --check "$js" || {
+              echo "❌ Syntax error in $js"
+              exit 1
+            }
+          done
+          echo "✓ All JS files have valid syntax"
+
+      - name: Verify ES module imports resolve
+        run: |
+          set -e
+          for js in $(find assets/js tests -name '*.js'); do
+            while IFS= read -r line; do
+              path=$(echo "$line" | grep -oE "from '[^']+'" | sed -E "s/from '//;s/'//")
+              if [ -z "$path" ]; then
+                path=$(echo "$line" | grep -oE "import '[^']+'" | sed -E "s/import '//;s/'//")
+              fi
+              if [ -z "$path" ]; then continue; fi
+              # Skip external imports (http, npm)
+              if [[ "$path" == http* ]] || [[ "$path" != .* ]]; then continue; fi
+              dir=$(dirname "$js")
+              resolved="$dir/$path"
+              if [ ! -f "$resolved" ]; then
+                echo "❌ $js imports missing module: $path (resolved: $resolved)"
+                exit 1
+              fi
+            done < <(grep -E "^import|^}.*from|^[a-zA-Z].*from" "$js" || true)
+          done
+          echo "✓ All ES module imports resolve"
+
+      - name: Check CSS files exist for every stylesheet reference
+        run: |
+          set -e
+          # Extract <link rel="stylesheet" href="..."> references from index.html
+          for css in $(grep -oE 'href="assets/css/[^"]+"' index.html | sed 's/href="//;s/"//'); do
+            if [ ! -f "$css" ]; then
+              echo "❌ index.html references missing CSS: $css"
+              exit 1
+            fi
+          done
+          echo "✓ All CSS references resolve"
+
+      - name: Check no fixed-width modal in mobile CSS
+        run: |
+          # Mobile CSS should not contain fixed-width modals that cause overflow
+          set -e
+          if grep -E "width:\s*[0-9]+px" assets/css/mobile.css | grep -v "min-width" | grep -v "max-width" | grep -v "var(" | grep -v "44px" | grep -v "36px" | grep -v "28px" | grep -v "32px" | grep -v "40px" | grep -v "22px" | grep -v "8px" | grep -v "6px" | grep -v "4px" | grep -v "10px" | grep -v "16px"; then
+            echo "⚠️  Found potential fixed-width declarations in mobile.css — review for horizontal overflow risk"
+          fi
+          echo "✓ Mobile CSS check done"
+
+      - name: Accessibility check (basic)
+        run: |
+          set -e
+          # Check every button has either text, aria-label, or visible text content
+          # Look for icon-only buttons without aria-label
+          if grep -E '<button[^>]*>[^<]*<i class="fas' index.html | grep -v 'aria-label' | grep -v '>[A-Z]'; then
+            echo "⚠️  Some icon-only buttons may be missing aria-label — review"
+          fi
+          echo "✓ Accessibility check done"
+
+      - name: Print summary
+        run: |
+          echo ""
+          echo "============================================="
+          echo "  LGenerator Quality Check — PASSED"
+          echo "============================================="
+          echo ""
+          echo "Files checked:"
+          find assets -type f | wc -l | xargs echo "  Assets:"
+          find tests -type f -name '*.js' | wc -l | xargs echo "  Tests:"
+          echo ""
