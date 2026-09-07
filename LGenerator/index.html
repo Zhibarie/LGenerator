@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Generator surat lamaran kerja + CV berbasis HTML/CSS/JavaScript murni. 100% client-side, deploy ke GitHub Pages.">
+  <meta name="theme-color" content="#202124">
+  <title>LGenerator — Surat Lamaran & CV</title>
+
+  <!-- Stylesheets (modular, loaded in dependency order) -->
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/editor.css">
+  <link rel="stylesheet" href="assets/css/modal.css">
+  <link rel="stylesheet" href="assets/css/cv.css">
+  <link rel="stylesheet" href="assets/css/attachments.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/mobile.css">
+  <link rel="stylesheet" href="assets/css/print.css">
+
+  <!-- Bootstrap (CDN, kept for icon utility classes only — FontAwesome) -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlWLo+3Fw6m6X0Y+l1j5j5j5j5j5j5j5j5j5j5j5j5j5j5j5j5j5j5j5j5j="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+</head>
+<body>
+
+<!-- Skip link for keyboard users -->
+<a href="#main-content" class="skip-link">Lewati ke konten utama</a>
+
+<div class="app-shell">
+
+  <!-- ─── TOOLBAR ─────────────────────────────────────────────────────────── -->
+  <header class="toolbar" role="banner">
+    <div class="toolbar-left">
+      <!-- Tab switcher -->
+      <div class="tab-switcher" role="tablist" aria-label="Pilih dokumen">
+        <button id="tab-surat" role="tab" aria-selected="true" aria-controls="editor-container-surat" class="active surat">
+          <i class="fas fa-file-alt me-1" aria-hidden="true"></i>
+          <span class="tab-btn-label">Surat</span>
+        </button>
+        <button id="tab-cv" role="tab" aria-selected="false" aria-controls="cv-container">
+          <i class="fas fa-id-card me-1" aria-hidden="true"></i>
+          <span class="tab-btn-label">CV</span>
+        </button>
+      </div>
+
+      <!-- AutoFit Surat -->
+      <div id="fit-status" title="Font otomatis menyesuaikan isi" aria-live="polite">
+        <i class="fas fa-magic text-warning" style="font-size:10px" aria-hidden="true"></i>
+        <div id="fit-bar-wrap"><div id="fit-bar"></div></div>
+        <span id="fit-label" style="font-size:10px">0%</span>
+        <span id="font-size-display" style="font-size:10px">12pt</span>
+      </div>
+      <!-- AutoFit CV -->
+      <div id="cv-fit-status" style="display:none" title="Font CV otomatis menyesuaikan isi" aria-live="polite">
+        <i class="fas fa-magic" style="font-size:10px;color:#facc15" aria-hidden="true"></i>
+        <div id="fit-bar-wrap"><div id="cv-fit-bar" style="height:100%;border-radius:99px;background:#22c55e;transition:width .4s,background .3s;width:0%"></div></div>
+        <span id="cv-fit-label" style="font-size:10px;color:#ccc">0%</span>
+        <span id="cv-font-size-display" style="font-size:10px;color:#facc15;font-weight:bold">12pt</span>
+      </div>
+
+      <span id="save-indicator" aria-live="polite"><i class="fas fa-check-circle me-1" aria-hidden="true"></i>Tersimpan</span>
+    </div>
+
+    <div class="toolbar-right">
+      <button id="btn-isi-cepat" class="btn-warning" aria-label="Buka Isi Cepat">
+        <i class="fas fa-bolt me-1" aria-hidden="true"></i>Isi Cepat
+      </button>
+
+      <button id="btn-reset" class="btn-secondary" aria-label="Reset data" title="Reset">
+        <i class="fas fa-undo" aria-hidden="true"></i>
+      </button>
+
+      <!-- PDF dropdown -->
+      <div class="dropdown">
+        <button id="btn-pdf-menu" class="btn-primary" aria-haspopup="menu" aria-expanded="false" aria-label="Menu PDF">
+          <i class="fas fa-file-pdf me-1" aria-hidden="true"></i>PDF <i class="fas fa-chevron-down" style="font-size:9px" aria-hidden="true"></i>
+        </button>
+        <div id="pdfMenuDrop" class="dropdown-menu" role="menu" aria-label="Menu PDF">
+          <button id="btn-export-surat" role="menuitem"><i class="fas fa-file-alt me-2" style="color:#c0392b" aria-hidden="true"></i>PDF Surat</button>
+          <button id="btn-export-cv" role="menuitem"><i class="fas fa-id-card me-2" style="color:#1a2a3a" aria-hidden="true"></i>PDF CV</button>
+          <button id="btn-export-all" role="menuitem"><i class="fas fa-layer-group me-2" style="color:#facc15" aria-hidden="true"></i>PDF Lengkap</button>
+          <button id="btn-print" role="menuitem"><i class="fas fa-print me-2" aria-hidden="true"></i>Cetak</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="main-content">
+
+    <!-- ─── LOADING OVERLAY ─────────────────────────────────────────────────── -->
+    <div id="pdf-loading" role="alert" aria-live="assertive" aria-hidden="true">
+      <div class="spinner" aria-hidden="true"></div>
+      <span class="loading-msg">Memproses...</span>
+      <span class="loading-progress" id="pdf-progress"></span>
+      <div class="loading-bar"><div class="loading-bar-fill" id="loading-bar-fill"></div></div>
+      <button type="button" class="loading-cancel-btn">Batalkan</button>
+    </div>
+
+    <!-- ─── MODAL: LAMPIRAN ─────────────────────────────────────────────────── -->
+    <div id="lampModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="lampModalTitle" aria-hidden="true">
+      <div class="modal-box">
+        <h5 id="lampModalTitle"><i class="fas fa-paperclip me-2" style="color:#3b82f6" aria-hidden="true"></i>Upload Dokumen Lampiran</h5>
+        <p class="sub" id="lamp-modal-subtitle">Upload file untuk lampiran ini (PDF / JPG / PNG)</p>
+
+        <div class="lamp-drop-zone" id="lampDropZone" tabindex="0" role="button" aria-label="Klik atau seret file ke sini">
+          <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
+          Klik atau seret file ke sini<br>
+          <span style="font-size:11px;color:#555">PDF, JPG, PNG, WEBP (maks 15MB)</span>
+        </div>
+        <input type="file" id="lampFileInput" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" style="display:none">
+
+        <div id="lamp-preview-area" style="display:none">
+          <div class="lamp-preview">
+            <i class="fas fa-file-alt" style="color:#3b82f6;font-size:1.2rem;flex-shrink:0" aria-hidden="true"></i>
+            <span class="lamp-preview-name" id="lamp-prev-name">—</span>
+            <span class="lamp-preview-size" id="lamp-prev-size"></span>
+            <span class="lamp-preview-pages" id="lamp-prev-pages"></span>
+          </div>
+
+          <div id="lamp-img-preview-wrap" style="display:none;margin-top:10px;text-align:center;position:relative">
+            <div id="lamp-orientation-badge" style="display:inline-block;margin-bottom:6px;padding:3px 10px;border-radius:20px;font-size:11px;font-family:sans-serif;font-weight:700;background:#ef4444;color:white">
+              <i class="fas fa-exclamation-triangle me-1" aria-hidden="true"></i><span id="lamp-orient-text">Landscape – disarankan diputar</span>
+            </div>
+            <div style="position:relative;display:inline-block">
+              <canvas id="lamp-img-canvas" style="max-width:100%;max-height:160px;border-radius:8px;display:block;margin:0 auto;border:1px solid #333" aria-label="Preview gambar lampiran"></canvas>
+              <button id="lamp-rotate-btn" type="button" aria-label="Putar gambar 90 derajat"
+                style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.65);border:none;color:white;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:sans-serif;font-weight:700;display:flex;align-items:center;gap:5px;transition:background .2s">
+                <i class="fas fa-redo" aria-hidden="true"></i> Putar 90°
+              </button>
+            </div>
+            <div style="font-size:11px;color:#555;margin-top:5px;font-family:sans-serif" id="lamp-rotate-hint">Klik "Putar 90°" untuk orientasi portrait.</div>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top:14px">
+          <button class="btn-primary" id="lamp-btn-apply" disabled style="opacity:.4"><i class="fas fa-check me-1" aria-hidden="true"></i>Terapkan</button>
+          <button class="btn-secondary" id="lamp-btn-remove" style="display:none"><i class="fas fa-trash me-1" aria-hidden="true"></i>Hapus File</button>
+          <button class="btn-secondary" data-modal-close="lampModal">Batal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── MODAL: TANDA TANGAN ─────────────────────────────────────────────── -->
+    <div id="sigModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="sigModalTitle" aria-hidden="true">
+      <div class="modal-box" style="width:min(510px, 95vw)">
+        <h5 id="sigModalTitle"><i class="fas fa-signature me-2" style="color:#e74c3c" aria-hidden="true"></i>Tanda Tangan</h5>
+        <p class="sub">Gambar atau unggah tanda tangan Anda.</p>
+
+        <div class="modal-tabs">
+          <button class="modal-tab active" data-tab="draw" role="tab" aria-selected="true"><i class="fas fa-pen me-1" aria-hidden="true"></i>Gambar</button>
+          <button class="modal-tab" data-tab="upload" role="tab" aria-selected="false"><i class="fas fa-upload me-1" aria-hidden="true"></i>Unggah</button>
+        </div>
+
+        <div id="sigPanel-draw">
+          <canvas id="sigCanvas" width="466" height="185" style="width:100%;height:185px;background:white;border-radius:8px;cursor:crosshair;touch-action:none;display:block" aria-label="Kanvas untuk menggambar tanda tangan"></canvas>
+          <div class="sig-controls" style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
+            <label style="font-size:11px;color:#888;font-family:sans-serif">Warna:</label>
+            <div class="color-dot active" style="background:#000;width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;min-width:24px;min-height:24px" data-color="#000000" role="button" tabindex="0" aria-label="Warna hitam"></div>
+            <div class="color-dot" style="background:#1a3cad;width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;min-width:24px;min-height:24px" data-color="#1a3cad" role="button" tabindex="0" aria-label="Warna biru"></div>
+            <div class="color-dot" style="background:#8b0000;width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;min-width:24px;min-height:24px" data-color="#8b0000" role="button" tabindex="0" aria-label="Warna merah tua"></div>
+            <label style="margin-left:8px;font-size:11px;color:#888;font-family:sans-serif">Tebal:</label>
+            <input type="range" id="penSize" min="1" max="6" value="2" step=".5" style="width:90px;accent-color:#c0392b" aria-label="Tebal garis">
+            <span id="penSizeVal" style="font-size:11px;color:#aaa;font-family:sans-serif">2px</span>
+            <button id="sig-clear-btn" class="btn-secondary" style="margin-left:auto;min-height:36px"><i class="fas fa-eraser me-1" aria-hidden="true"></i>Hapus</button>
+          </div>
+        </div>
+
+        <div id="sigPanel-upload" style="display:none">
+          <div class="sig-upload-area" id="sig-upload-area" tabindex="0" role="button" aria-label="Pilih gambar tanda tangan"
+               style="height:185px;border:2px dashed #444;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:border-color .2s,background .2s;color:#777;font-size:13px;gap:8px;font-family:sans-serif">
+            <i class="fas fa-cloud-upload-alt" style="font-size:2rem" aria-hidden="true"></i>
+            <span>Klik untuk pilih gambar tanda tangan</span>
+            <span style="font-size:11px;color:#555">PNG / JPG (maks 3MB)</span>
+          </div>
+          <input type="file" id="sigFile" accept="image/png,image/jpeg" style="display:none">
+        </div>
+
+        <div class="modal-actions" style="justify-content:flex-end">
+          <button class="btn-secondary" data-modal-close="sigModal">Batal</button>
+          <button class="btn-primary" id="sig-apply-btn"><i class="fas fa-check me-1" aria-hidden="true"></i>Terapkan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── MODAL: ISI CEPAT ─────────────────────────────────────────────────── -->
+    <div id="isiCepatModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="icTitle" aria-hidden="true">
+      <div class="modal-box" style="width:min(560px, 95vw);max-height:92vh">
+        <h5 id="icTitle"><i class="fas fa-bolt me-2" style="color:#facc15" aria-hidden="true"></i>Isi Cepat</h5>
+        <p class="sub">Isi sekali, semua bagian surat & CV terisi otomatis.</p>
+
+        <div class="qf-grid">
+          <div class="qf-section-title"><i class="fas fa-user me-1" aria-hidden="true"></i>Data Diri</div>
+
+          <div class="full">
+            <label class="modal-label" for="ic_nama">Nama Lengkap</label>
+            <input class="modal-input" id="ic_nama" type="text" autocomplete="name" placeholder="Contoh: Dani Hamdani">
+          </div>
+          <div>
+            <label class="modal-label" for="ic_ttl">Tempat, Tanggal Lahir</label>
+            <input class="modal-input" id="ic_ttl" type="text" placeholder="Semarang, 07 Agustus 1999">
+          </div>
+          <div>
+            <label class="modal-label" for="ic_jk">Jenis Kelamin</label>
+            <select class="modal-input" id="ic_jk">
+              <option value="Laki – laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+          <div class="full">
+            <label class="modal-label" for="ic_alamat">Alamat Lengkap</label>
+            <input class="modal-input" id="ic_alamat" type="text" autocomplete="street-address" placeholder="Contoh: Ungaran, Semarang">
+          </div>
+          <div>
+            <label class="modal-label" for="ic_pendidikan">Pendidikan Terakhir</label>
+            <input class="modal-input" id="ic_pendidikan" type="text" placeholder="Contoh: SMK N1 Semarang">
+          </div>
+          <div>
+            <label class="modal-label" for="ic_agama">Agama</label>
+            <select class="modal-input" id="ic_agama">
+              <option>Islam</option><option>Kristen</option><option>Katolik</option>
+              <option>Hindu</option><option>Buddha</option><option>Konghucu</option>
+            </select>
+          </div>
+          <div>
+            <label class="modal-label" for="ic_status">Status Perkawinan</label>
+            <select class="modal-input" id="ic_status">
+              <option>Belum Kawin</option><option>Kawin</option><option>Cerai</option>
+            </select>
+          </div>
+          <div>
+            <label class="modal-label" for="ic_telepon">No Telepon</label>
+            <input class="modal-input" id="ic_telepon" type="tel" autocomplete="tel" inputmode="tel" placeholder="0812 3456 7890">
+          </div>
+          <div class="full">
+            <label class="modal-label" for="ic_email">Email</label>
+            <input class="modal-input" id="ic_email" type="email" autocomplete="email" inputmode="email" placeholder="nama@email.com">
+          </div>
+
+          <hr class="qf-divider">
+          <div class="qf-section-title"><i class="fas fa-building me-1" aria-hidden="true"></i>Tujuan Lamaran</div>
+
+          <div>
+            <label class="modal-label" for="ic_pt">Nama PT / Instansi</label>
+            <input class="modal-input" id="ic_pt" type="text" placeholder="Contoh: PT. Kayu Kapur">
+          </div>
+          <div>
+            <label class="modal-label" for="ic_lokasi">Lokasi (Di Tempat / Kota)</label>
+            <input class="modal-input" id="ic_lokasi" type="text" placeholder="Di Tempat" value="Di Tempat">
+          </div>
+          <div>
+            <label class="modal-label" for="ic_posisi">Posisi yang Dilamar</label>
+            <input class="modal-input" id="ic_posisi" type="text" placeholder="Contoh: Quality Control">
+          </div>
+          <div>
+            <label class="modal-label" for="ic_kota">Kota Surat</label>
+            <input class="modal-input" id="ic_kota" type="text" placeholder="Contoh: Semarang">
+          </div>
+
+          <hr class="qf-divider">
+          <div class="qf-section-title"><i class="fas fa-info-circle me-1" aria-hidden="true"></i>Sumber Info Lowongan</div>
+
+          <div>
+            <label class="modal-label" for="ic_sumber">Sumber Informasi</label>
+            <select class="modal-input" id="ic_sumber">
+              <option value="brosur yang ditempel di depan PT">Brosur / Pengumuman</option>
+              <option value="website resmi perusahaan">Website Perusahaan</option>
+              <option value="iklan di media sosial">Media Sosial</option>
+              <option value="iklan di surat kabar">Surat Kabar / Koran</option>
+              <option value="rekomendasi dari kenalan">Rekomendasi Kenalan</option>
+              <option value="portal lowongan kerja online">Portal Lowongan (Jobstreet, dll)</option>
+            </select>
+          </div>
+          <div id="ic_tgl_wrap">
+            <label class="modal-label" for="ic_tgl_info">Tanggal Dapat Info</label>
+            <input class="modal-input" id="ic_tgl_info" type="date">
+          </div>
+
+          <hr class="qf-divider">
+          <div class="qf-section-title"><i class="fas fa-paperclip me-1" aria-hidden="true"></i>Daftar Lampiran</div>
+
+          <div class="full">
+            <label class="modal-label" style="margin-bottom:8px">Centang yang ingin dilampirkan:</label>
+            <div id="ic_lamp_list" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-bottom:10px"></div>
+            <div style="display:flex;gap:6px;margin-top:4px">
+              <input class="modal-input" id="ic_lamp_custom" type="text" placeholder="Tambah lampiran lain... (Enter untuk tambah)" style="flex:1">
+              <button id="ic-lamp-add" class="btn-secondary" style="background:#27ae60;border:none;color:white;min-width:44px" aria-label="Tambah lampiran"><i class="fas fa-plus" aria-hidden="true"></i></button>
+            </div>
+          </div>
+
+          <hr class="qf-divider">
+          <div class="qf-section-title"><i class="fas fa-calendar me-1" aria-hidden="true"></i>Tanggal Surat</div>
+
+          <div class="full">
+            <div class="qf-date-group">
+              <button type="button" class="qf-date-btn active" id="ic_date_today"><i class="fas fa-calendar-day me-1" aria-hidden="true"></i>Hari Ini</button>
+              <button type="button" class="qf-date-btn" id="ic_date_tomorrow"><i class="fas fa-calendar-plus me-1" aria-hidden="true"></i>Besok</button>
+              <button type="button" class="qf-date-btn" id="ic_date_custom"><i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>Pilih Tanggal</button>
+            </div>
+            <input class="modal-input" id="ic_date_custom_val" type="date" style="margin-top:8px;display:none">
+          </div>
+
+          <hr class="qf-divider">
+          <div class="qf-section-title"><i class="fas fa-id-card me-1" aria-hidden="true"></i>Template CV</div>
+
+          <div class="full">
+            <label class="modal-label" for="ic_cv_tentang">Tentang Saya <span style="color:#555;font-weight:400">(profil singkat)</span></label>
+            <textarea class="modal-input" id="ic_cv_tentang" rows="3" placeholder="Contoh: Lulusan SMK dengan pengalaman magang di bidang Quality Control..." style="resize:vertical;line-height:1.5;min-height:80px"></textarea>
+          </div>
+
+          <div class="full">
+            <label class="modal-label" style="margin-bottom:8px">Pendidikan</label>
+            <div id="ic_edu_list" style="display:flex;flex-direction:column;gap:8px"></div>
+            <button id="ic-edu-add" type="button" class="btn-secondary" style="margin-top:6px;color:#27ae60"><i class="fas fa-plus-circle me-1" aria-hidden="true"></i>Tambah Pendidikan</button>
+          </div>
+
+          <div class="full">
+            <label class="modal-label" style="margin-bottom:8px">Pengalaman Kerja</label>
+            <div id="ic_exp_list" style="display:flex;flex-direction:column;gap:8px"></div>
+            <button id="ic-exp-add" type="button" class="btn-secondary" style="margin-top:6px;color:#27ae60"><i class="fas fa-plus-circle me-1" aria-hidden="true"></i>Tambah Pengalaman</button>
+          </div>
+        </div>
+
+        <button class="qf-apply-btn" id="ic-apply-btn"><i class="fas fa-check me-2" aria-hidden="true"></i>Terapkan ke Surat & CV</button>
+        <button class="qf-cancel-btn" data-modal-close="isiCepatModal">Batal</button>
+      </div>
+    </div>
+
+    <!-- ─── SURAT EDITOR ──────────────────────────────────────────────────── -->
+    <div class="editor-container" id="editor-container-surat">
+      <div class="paper-wrapper" id="suratWrapper">
+        <div class="paper-a4" id="paperFrame">
+          <div class="paper-content" id="letterContent">
+
+            <div class="date-line">
+              <span class="editable" contenteditable="true" data-key="kota" aria-label="Kota surat">Semarang</span>,
+              <span id="autoDate">26 Juni 2020</span>
+            </div>
+
+            <div class="letter-judul">Surat Lamaran Pekerjaan</div>
+
+            <div class="recipient-block">
+              Kepada Yth :<br><br>
+              <span class="editable" contenteditable="true" data-key="tujuan_nama" aria-label="Tujuan">HRD PT. Kayu Kapur</span><br>
+              <span class="editable" contenteditable="true" data-key="tujuan_lokasi" aria-label="Lokasi tujuan">Di Tempat</span>
+            </div>
+
+            <p class="letter-para">Dengan hormat,</p>
+
+            <p class="letter-para">
+              <span class="editable" contenteditable="true" data-key="paragraf_buka" aria-label="Paragraf pembuka">Berdasarkan informasi yang saya dapatkan dari brosur yang ditempel di depan PT pada tanggal 25 Juni 2020, bahwa PT. Kayu Kapur sedang membutuhkan pekerja tambahan pada bagian Quality Control.</span>
+            </p>
+
+            <p class="letter-para">
+              <span class="editable" contenteditable="true" data-key="paragraf_niat" aria-label="Paragraf niat">Sehubungan dengan itu, melalui surat ini saya bermaksud melamar pekerjaan di perusahaan yang Bapak/Ibu pimpin sebagai <strong>Quality Control</strong>.</span>
+            </p>
+
+            <p class="letter-para">Berikut adalah profil singkat saya sebagai bahan informasi tentang saya :</p>
+
+            <table class="data-table">
+              <tr><td>Nama</td><td>:</td><td><span class="editable" contenteditable="true" data-key="nama" aria-label="Nama">Dani Hamdani</span></td></tr>
+              <tr><td>Tempat Tanggal Lahir</td><td>:</td><td><span class="editable" contenteditable="true" data-key="ttl" aria-label="TTL">Semarang, 07 Agustus 1999</span></td></tr>
+              <tr><td>Jenis Kelamin</td><td>:</td><td><span class="editable" contenteditable="true" data-key="jk" aria-label="Jenis kelamin">Laki – laki</span></td></tr>
+              <tr><td>Alamat Lengkap</td><td>:</td><td><span class="editable" contenteditable="true" data-key="alamat" aria-label="Alamat">Ungaran Semarang</span></td></tr>
+              <tr><td>Pendidikan</td><td>:</td><td><span class="editable" contenteditable="true" data-key="pendidikan" aria-label="Pendidikan">SMK N1 Semarang</span></td></tr>
+              <tr><td>Agama</td><td>:</td><td><span class="editable" contenteditable="true" data-key="agama" aria-label="Agama">Islam</span></td></tr>
+              <tr><td>Status Perkawinan</td><td>:</td><td><span class="editable" contenteditable="true" data-key="status" aria-label="Status">Belum Kawin</span></td></tr>
+              <tr><td>No Telepon</td><td>:</td><td><span class="editable" contenteditable="true" data-key="telepon" aria-label="Telepon">0823 2224 0471</span></td></tr>
+              <tr><td>Email</td><td>:</td><td><span class="editable" contenteditable="true" data-key="email" aria-label="Email">danihamdani@gmail.com</span></td></tr>
+            </table>
+
+            <p class="letter-para">
+              <span class="editable" contenteditable="true" data-key="paragraf_keahlian" aria-label="Keahlian">Saya memiliki kondisi kesehatan yang baik, ketelitian yang tinggi, dan mampu bekerja secara personal maupun tim.</span>
+            </p>
+
+            <p class="letter-para">Sebagai bahan pertimbangan, saya lampirkan:</p>
+
+            <ul class="lamp-grid" id="attachmentGrid" aria-label="Daftar lampiran"></ul>
+            <button type="button" class="btn-add-lamp" id="btn-add-lamp" aria-label="Tambah lampiran"><i class="fas fa-plus-circle me-1" aria-hidden="true"></i>Tambah lampiran</button>
+
+            <p class="letter-para" style="margin-top:10px">
+              <span class="editable" contenteditable="true" data-key="paragraf_tutup" aria-label="Paragraf penutup">Demikian surat permohonan pekerjaan ini saya buat dengan sebenar – benarnya. Saya sangat berharap Bapak/Ibu bersedia untuk memberikan kesempatan tes dan wawancara kepada saya, sehingga saya dapat menjelaskan secara lebih rinci tentang potensi yang saya miliki. Atas perhatian Bapak/Ibu saya ucapkan terima kasih.</span>
+            </p>
+
+            <div class="ttd-block">
+              <div class="ttd-inner">
+                <div>Hormat saya,</div>
+                <div class="signature-zone" id="signatureZone" tabindex="0" role="button" aria-label="Klik untuk menambah tanda tangan" title="Klik untuk tanda tangan">
+                  <img id="sigPreview" src="" alt="Tanda tangan">
+                  <div class="sig-placeholder">
+                    <i class="fas fa-signature d-block mb-1" style="font-size:1.2rem;opacity:0.3" aria-hidden="true"></i>
+                    Klik untuk tanda tangan
+                  </div>
+                  <button type="button" class="sig-clear" id="sig-clear-final" aria-label="Hapus tanda tangan"><i class="fas fa-times-circle" aria-hidden="true"></i></button>
+                </div>
+                <div><span class="editable" contenteditable="true" data-key="ttd_nama" aria-label="Nama TTD">Dani Hamdani</span></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── CV EDITOR ─────────────────────────────────────────────────────── -->
+    <div class="editor-container" id="cv-container" style="display:none">
+      <div class="paper-wrapper" id="cvWrapper">
+        <div class="paper-a4" id="cvFrame" style="height:auto;min-height:var(--a4-h);overflow:visible;display:flex;flex-direction:column">
+
+          <div class="cv-cols">
+            <!-- KOLOM KIRI -->
+            <div id="cv-left">
+              <div style="text-align:center;margin-bottom:18px">
+                <div id="cv-photo-zone" tabindex="0" role="button" aria-label="Upload foto" title="Klik untuk upload foto">
+                  <img id="cv-photo-img" src="" alt="Foto">
+                  <div id="cv-photo-placeholder">
+                    <i class="fas fa-camera" style="font-size:1.6rem;display:block;margin-bottom:6px;opacity:.4" aria-hidden="true"></i>
+                    <span style="font-size:10px;color:rgba(255,255,255,0.4);text-align:center;line-height:1.5">Klik upload foto</span>
+                  </div>
+                  <button type="button" id="cv-photo-clear" aria-label="Hapus foto">✕</button>
+                </div>
+                <input type="file" id="cv-photo-input" accept="image/*" style="display:none">
+              </div>
+
+              <div class="cv-name-pos">
+                <div style="font-size:15px;font-weight:700;font-family:sans-serif;line-height:1.3;margin-bottom:4px">
+                  <span class="cv-editable" contenteditable="true" data-cvkey="cv_nama" style="outline:none">Nama Lengkap</span>
+                </div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.6);font-family:sans-serif">
+                  <span class="cv-editable" contenteditable="true" data-cvkey="cv_posisi" style="outline:none">Posisi / Jabatan</span>
+                </div>
+              </div>
+
+              <div class="cv-section-left">
+                <div class="cv-left-title">KONTAK</div>
+                <div class="cv-contact-item"><i class="fas fa-phone" aria-hidden="true"></i><span class="cv-editable" contenteditable="true" data-cvkey="cv_telepon">08xx xxxx xxxx</span></div>
+                <div class="cv-contact-item"><i class="fas fa-envelope" aria-hidden="true"></i><span class="cv-editable" contenteditable="true" data-cvkey="cv_email">nama@email.com</span></div>
+                <div class="cv-contact-item"><i class="fas fa-map-marker-alt" aria-hidden="true"></i><span class="cv-editable" contenteditable="true" data-cvkey="cv_alamat">Alamat lengkap</span></div>
+              </div>
+
+              <div class="cv-section-left">
+                <div class="cv-left-title">DATA DIRI</div>
+                <div class="cv-info-row"><span style="opacity:.6;font-size:9px">TTL</span><span class="cv-editable" contenteditable="true" data-cvkey="cv_ttl">Kota, DD Bulan YYYY</span></div>
+                <div class="cv-info-row"><span style="opacity:.6;font-size:9px">Kelamin</span><span class="cv-editable" contenteditable="true" data-cvkey="cv_jk">Laki-laki</span></div>
+                <div class="cv-info-row"><span style="opacity:.6;font-size:9px">Agama</span><span class="cv-editable" contenteditable="true" data-cvkey="cv_agama">Islam</span></div>
+                <div class="cv-info-row"><span style="opacity:.6;font-size:9px">Status</span><span class="cv-editable" contenteditable="true" data-cvkey="cv_status">Belum Kawin</span></div>
+              </div>
+            </div>
+
+            <!-- KOLOM KANAN -->
+            <div id="cv-right">
+              <div class="cv-section-right">
+                <div class="cv-right-title"><i class="fas fa-user me-2" aria-hidden="true"></i>TENTANG SAYA</div>
+                <p class="cv-editable" contenteditable="true" data-cvkey="cv_tentang"
+                  style="outline:none;font-size:11px;line-height:1.7;color:#333;font-family:'Times New Roman',serif;text-align:justify">
+                  Tuliskan profil singkat tentang diri Anda di sini.
+                </p>
+              </div>
+
+              <div class="cv-section-right">
+                <div class="cv-right-title"><i class="fas fa-graduation-cap me-2" aria-hidden="true"></i>PENDIDIKAN</div>
+                <div id="cv-edu-list"></div>
+                <button type="button" class="cv-add-btn" data-action="add-edu"><i class="fas fa-plus-circle me-1" aria-hidden="true"></i>Tambah Pendidikan</button>
+              </div>
+
+              <div class="cv-section-right">
+                <div class="cv-right-title"><i class="fas fa-briefcase me-2" aria-hidden="true"></i>PENGALAMAN KERJA</div>
+                <div id="cv-exp-list"></div>
+                <button type="button" class="cv-add-btn" data-action="add-exp"><i class="fas fa-plus-circle me-1" aria-hidden="true"></i>Tambah Pengalaman</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ─── APP ENTRYPOINT (ES Modules) ─────────────────────────────────────────── -->
+<script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
