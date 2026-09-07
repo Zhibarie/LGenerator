@@ -1,0 +1,94 @@
+/* ─── PRINT ──────────────────────────────────────────────────────────────────
+   Print stylesheet: A4 page setup, hide UI chrome, ensure backgrounds print.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  /* Hide all UI chrome */
+  .toolbar,
+  .btn-remove,
+  .btn-add-lamp,
+  .btn-lamp-upload,
+  #pdf-loading,
+  .modal,
+  .sig-placeholder,
+  .sig-clear,
+  #save-indicator,
+  #lgen-toasts,
+  .cv-add-btn,
+  .cv-remove-btn,
+  .cv-photo-clear,
+  .skip-link {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .app-shell {
+    min-height: auto !important;
+  }
+
+  .editor-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-width: unset !important;
+    display: block !important;
+  }
+
+  /* Each paper on its own page */
+  .paper-wrapper {
+    transform: none !important;
+    page-break-after: always;
+    break-after: page;
+  }
+  .paper-wrapper:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  .paper-a4 {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .paper-a4::after { display: none !important; }
+
+  /* Force backgrounds to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Editable fields look like normal text */
+  .editable {
+    color: black !important;
+    border-bottom: none !important;
+  }
+  .cv-editable {
+    border-bottom: none !important;
+  }
+  .signature-zone {
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* If no photo, hide the dashed border */
+  #cv-photo-zone {
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* Hide the toolbar's empty container */
+  .toolbar { height: 0 !important; overflow: hidden !important; }
+}

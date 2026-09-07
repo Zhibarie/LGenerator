@@ -1,0 +1,231 @@
+/* ─── COMPONENTS ────────────────────────────────────────────────────────────
+   Reusable UI primitives: buttons, tabs, indicators, loading overlay, toasts.
+   All interactive elements meet ≥44×44 touch target on mobile.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+button, .btn, [role="button"] {
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  font-family: sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+
+button:active { transform: scale(0.97); }
+button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+.btn-primary:hover:not(:disabled) { background: #a93226; }
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.btn-secondary:hover { border-color: var(--text-muted); color: var(--text); }
+
+.btn-warning {
+  background: var(--accent-yellow);
+  color: #1a1a1a;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ── Tab switcher (Surat / CV) ─────────────────────────────────────────────── */
+.tab-switcher {
+  display: flex;
+  background: rgba(255,255,255,0.1);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.tab-switcher button {
+  font-family: sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  min-height: 36px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.tab-switcher button.active.surat { background: var(--accent); color: white; }
+.tab-switcher button.active.cv    { background: #1a2a3a; color: white; }
+
+/* ── Auto-fit indicator ───────────────────────────────────────────────────── */
+#fit-status, #cv-fit-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 12px;
+  min-height: 28px;
+}
+
+#fit-bar-wrap {
+  width: 75px;
+  height: 6px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 99px;
+  overflow: hidden;
+}
+#fit-bar, #cv-fit-bar {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent-green);
+  transition: width 0.4s, background 0.3s;
+  width: 0%;
+}
+#fit-label, #cv-fit-label {
+  min-width: 38px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-family: sans-serif;
+}
+#font-size-display, #cv-font-size-display {
+  color: var(--accent-yellow);
+  font-weight: bold;
+  font-size: 11px;
+  font-family: sans-serif;
+}
+
+/* ── Save indicator ───────────────────────────────────────────────────────── */
+#save-indicator {
+  font-family: sans-serif;
+  font-size: 11px;
+  color: #6ee7a0;
+  opacity: 0;
+  transition: opacity 0.5s;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+#save-indicator.show { opacity: 1; }
+
+/* ── Loading overlay ──────────────────────────────────────────────────────── */
+#pdf-loading {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 9999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.05rem;
+  font-weight: bold;
+  gap: 14px;
+  padding: 20px;
+  text-align: center;
+}
+#pdf-loading.active { display: flex; }
+#pdf-loading .spinner {
+  width: 46px;
+  height: 46px;
+  border: 4px solid rgba(255,255,255,0.25);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+#pdf-loading .loading-msg { font-family: sans-serif; }
+#pdf-loading .loading-progress {
+  font-family: sans-serif;
+  font-size: 12px;
+  color: #aaa;
+}
+#pdf-loading .loading-bar {
+  width: min(280px, 80vw);
+  height: 8px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 99px;
+  overflow: hidden;
+}
+#pdf-loading .loading-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-green);
+  transition: width 0.3s;
+  border-radius: 99px;
+}
+.loading-cancel-btn {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-family: sans-serif;
+  cursor: pointer;
+  min-height: 40px;
+  margin-top: 8px;
+}
+.loading-cancel-btn:hover { background: rgba(255,255,255,0.1); }
+
+/* ── Toast container ──────────────────────────────────────────────────────── */
+#lgen-toasts {
+  position: fixed;
+  bottom: max(16px, var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  width: 100%;
+  max-width: 92vw;
+}
+#lgen-toasts > * { pointer-events: auto; }
+
+/* ── Dropdown menu (PDF menu) ──────────────────────────────────────────────── */
+.dropdown { position: relative; }
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--bg-modal);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  min-width: 180px;
+  z-index: 2000;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.dropdown-menu.open { display: block; }
+.dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  font-family: sans-serif;
+  min-height: 44px;
+}
+.dropdown-menu button:hover, .dropdown-menu button:focus { background: rgba(255,255,255,0.08); }
+.dropdown-menu button + button { border-top: 1px solid #333; }
